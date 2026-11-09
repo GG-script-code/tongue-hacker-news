@@ -19,7 +19,7 @@
       </button>
     </header>
 
-    <div class="search-bar-wrapper">
+    <div class="controls-wrapper">
       <input
         type="search"
         id="search-input"
@@ -27,6 +27,22 @@
         placeholder="Cerca nelle news caricate..."
         aria-label="Cerca nelle news"
       />
+
+      <div class="controls-row">
+        <div class="control-group">
+          <label for="sort-select" class="control-label">Ordina per</label>
+          <select id="sort-select" class="control-select">
+            <option value="newest">Più recenti</option>
+            <option value="title-asc">Titolo A-Z</option>
+            <option value="title-desc">Titolo Z-A</option>
+          </select>
+        </div>
+
+        <div class="control-group control-group-button">
+          <span class="control-label">&nbsp;</span>
+          <button id="refresh-btn" class="refresh-btn" type="button">Aggiorna news</button>
+        </div>
+      </div>
     </div>
 
     <main>

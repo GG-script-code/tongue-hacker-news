@@ -36,6 +36,21 @@ The application is built entirely with vanilla JavaScript (ES6+), uses Vite as b
 
 ---
 
+## Features
+
+- **Latest news from Hacker News**: the first 10 stories are loaded on startup, more can be loaded in batches of 10 via the "Load more" button.
+- **Search**: filter loaded stories by title (client-side).
+- **Sort**: order loaded stories by newest, oldest, title A-Z, or title Z-A.
+- **Group by date**: when sorted by date, stories are grouped under day headers ("Oggi", "Ieri", etc.).
+- **Refresh**: reload the latest stories from scratch with a single click.
+- **Dark mode**: toggle between light and dark theme; preference is saved in `localStorage`.
+- **Local cache**: loaded stories are cached in `localStorage` for 10 minutes to reduce API calls.
+- **Skeleton loading**: modern skeleton placeholders while data is being fetched.
+- **Back-to-top button**: appears after scrolling, smooth scroll to top.
+- **Responsive layout**: works on desktop and mobile.
+
+---
+
 ## Architecture
 
 The project follows a clean separation of concerns, inspired by the Repository Pattern. The goal is to isolate the API layer from the UI layer, making each part independently testable.
@@ -47,11 +62,20 @@ src/
 │   │   └── HackerNewsRepository.js   # API layer (Repository Pattern)
 │   ├── ui/
 │   │   ├── NewsRenderer.js           # DOM rendering
-│   │   └── LoadMoreButton.js         # Button state management
+│   │   ├── LoadMoreButton.js         # Button state management
+│   │   ├── ThemeManager.js           # Light/dark theme toggle
+│   │   ├── SearchBar.js              # Search input binding
+│   │   ├── BackToTop.js              # Back-to-top button
+│   │   └── NewsControls.js           # Sort control binding
 │   ├── utils/
 │   │   ├── pagination.js             # Pure function for pagination
-│   │   └── dateFormatter.js          # Pure function for date formatting
+│   │   ├── dateFormatter.js          # Pure function for date formatting
+│   │   ├── search.js                 # Pure function for title filtering
+│   │   ├── sortStories.js            # Pure function for sorting
+│   │   ├── groupByDate.js            # Pure function for grouping by day
+│   │   └── cache.js                  # Pure functions for cache validity
 │   ├── config.js                     # Singleton configuration via ES modules
+│   ├── storage.js                    # Safe localStorage wrapper
 │   └── main.js                       # Entry point, orchestration
 ├── css/
 │   └── style.css
@@ -140,11 +164,15 @@ npm run test:coverage   # With coverage report
 
 ## Testing
 
-The project has **18 automated tests** covering the critical modules:
+The project has **39 automated tests** covering the critical modules:
 
-- **HackerNewsRepository** (8 tests): ID fetching, story normalization, fallback URL construction, handling of `null` responses, batch filtering.
+- **HackerNewsRepository** (11 tests): ID fetching, story normalization, fallback URL construction, handling of `null` responses, batch filtering, cache hit/miss/expiry.
 - **pagination** (5 tests): first page, second page, last partial page, out-of-bounds page, invalid input.
 - **dateFormatter** (5 tests): valid timestamp, `null`, `undefined`, `0`, year extraction.
+- **cache** (5 tests): validity check for recent/expired/invalid timestamps, key building.
+- **search** (4 tests): empty query, case-insensitive filtering, no match, invalid input.
+- **sortStories** (6 tests): newest first, oldest first, title A-Z, title Z-A, no mutation, invalid input.
+- **groupByDate** (3 tests): grouping by day, "Oggi"/"Ieri" labels, full date label for older dates.
 
 ### Coverage strategy
 
@@ -153,11 +181,18 @@ Coverage is intentionally focused on the modules that contain business logic and
 | Module                    | Statements | Branch | Functions | Lines |
 | ------------------------- | ---------- | ------ | --------- | ----- |
 | `config.js`               | 100%       | 75%    | 100%      | 100%  |
-| `HackerNewsRepository.js` | 100%       | 93.33% | 100%      | 100%  |
+| `HackerNewsRepository.js` | 100%       | 96.15% | 100%      | 100%  |
 | `dateFormatter.js`        | 100%       | 100%   | 100%      | 100%  |
 | `pagination.js`           | 100%       | 100%   | 100%      | 100%  |
+| `search.js`               | 100%       | 100%   | 100%      | 100%  |
+| `sortStories.js`          | 100%       | 100%   | 100%      | 100%  |
+| `groupByDate.js`          | 100%       | 100%   | 100%      | 100%  |
+| `cache.js`                | 100%       | 100%   | 100%      | 100%  |
+| `storage.js`              | 62.5%      | 100%   | 66.66%    | 62.5% |
 
-The `src/js/ui/` modules (`NewsRenderer`, `LoadMoreButton`) are **intentionally excluded** from testing. They contain no business logic (only DOM manipulation and simple state toggling) and testing them would require a full DOM environment (jsdom) with no meaningful gain in confidence.
+The `src/js/ui/` modules (`NewsRenderer`, `LoadMoreButton`, `ThemeManager`, `SearchBar`, `BackToTop`, `NewsControls`) are **intentionally excluded** from testing. They contain no business logic (only DOM manipulation and simple state toggling) and testing them would require a full DOM environment (jsdom) with no meaningful gain in confidence.
+
+`storage.js` is covered indirectly through the repository tests: the cache tests exercise the `safeGet` and `safeSet` paths. The uncovered lines are the error branches of the `try/catch` blocks, which only trigger on storage quota errors or private-mode restrictions and are not reproducible in a Node test environment without heavy mocking.
 
 This choice aligns with the project brief, which asks for tests on "critical functions, particularly those related to calculations and data handling".
 
@@ -184,11 +219,20 @@ tongue-hacker-news/
 │   │   │   └── HackerNewsRepository.js
 │   │   ├── ui/
 │   │   │   ├── NewsRenderer.js
-│   │   │   └── LoadMoreButton.js
+│   │   │   ├── LoadMoreButton.js
+│   │   │   ├── ThemeManager.js
+│   │   │   ├── SearchBar.js
+│   │   │   ├── BackToTop.js
+│   │   │   └── NewsControls.js
 │   │   ├── utils/
 │   │   │   ├── pagination.js
-│   │   │   └── dateFormatter.js
+│   │   │   ├── dateFormatter.js
+│   │   │   ├── search.js
+│   │   │   ├── sortStories.js
+│   │   │   ├── groupByDate.js
+│   │   │   └── cache.js
 │   │   ├── config.js
+│   │   ├── storage.js
 │   │   └── main.js
 │   ├── css/
 │   │   └── style.css
@@ -197,7 +241,11 @@ tongue-hacker-news/
 └── tests/
     ├── HackerNewsRepository.test.js
     ├── pagination.test.js
-    └── dateFormatter.test.js
+    ├── dateFormatter.test.js
+    ├── cache.test.js
+    ├── search.test.js
+    ├── sortStories.test.js
+    └── groupByDate.test.js
 ```
 
 ---

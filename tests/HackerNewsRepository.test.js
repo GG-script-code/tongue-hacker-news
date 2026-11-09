@@ -1,6 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HackerNewsRepository } from '@/js/api/HackerNewsRepository.js';
 
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: (key) => store[key] ?? null,
+    setItem: (key, value) => {
+      store[key] = String(value);
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
 describe('HackerNewsRepository', () => {
   let mockClient;
   let repo;
@@ -74,6 +95,54 @@ describe('HackerNewsRepository', () => {
       mockClient.get.mockRejectedValue(new Error('Network error'));
       const stories = await repo.getStoriesBatch([1, 2, 3]);
       expect(stories).toEqual([]);
+    });
+  });
+
+  describe('getStoriesBatch with cache', () => {
+    beforeEach(() => {
+      localStorageMock.clear();
+    });
+
+    it('caches stories after fetching and reuses them on second call', async () => {
+      const cachedRepo = new HackerNewsRepository(mockClient, true);
+      const story = { id: 1, title: 'Cached', url: 'https://c.com', time: 100 };
+      mockClient.get.mockResolvedValue({ data: story });
+
+      const first = await cachedRepo.getStoriesBatch([1]);
+      expect(first).toHaveLength(1);
+      expect(mockClient.get).toHaveBeenCalledTimes(1);
+
+      const second = await cachedRepo.getStoriesBatch([1]);
+      expect(second).toHaveLength(1);
+      expect(mockClient.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores expired cache entries', async () => {
+      const cachedRepo = new HackerNewsRepository(mockClient, true);
+      const story = { id: 2, title: 'Expired', url: 'https://e.com', time: 200 };
+      mockClient.get.mockResolvedValue({ data: story });
+
+      const cacheKey = 'tongue:cache:page:2';
+      localStorageMock.setItem(
+        cacheKey,
+        JSON.stringify({
+          stories: [story],
+          timestamp: Date.now() - 20 * 60 * 1000,
+        })
+      );
+
+      await cachedRepo.getStoriesBatch([2]);
+      expect(mockClient.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not cache when cache is disabled', async () => {
+      const noCacheRepo = new HackerNewsRepository(mockClient, false);
+      const story = { id: 3, title: 'NoCache', url: 'https://n.com', time: 300 };
+      mockClient.get.mockResolvedValue({ data: story });
+
+      await noCacheRepo.getStoriesBatch([3]);
+      await noCacheRepo.getStoriesBatch([3]);
+      expect(mockClient.get).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -14,20 +14,32 @@ export class NewsRenderer {
     this.container.innerHTML = '';
   }
 
-  render(stories) {
-    if (!Array.isArray(stories) || stories.length === 0) return;
-    this.container.insertAdjacentHTML('beforeend', this.buildCardsHtml(stories));
-  }
-
-  renderFiltered(stories) {
+  renderStories(stories, groups) {
     this.container.innerHTML = '';
+
     if (!Array.isArray(stories) || stories.length === 0) {
       this.container.insertAdjacentHTML(
         'beforeend',
-        '<p class="no-results">Nessuna news corrisponde alla ricerca.</p>'
+        '<p class="no-results">Nessuna news corrisponde ai filtri selezionati.</p>'
       );
       return;
     }
+
+    if (Array.isArray(groups) && groups.length > 0) {
+      const html = groups
+        .map(
+          (group) => `
+          <section class="news-group">
+            <h2 class="news-group-label">${group.label}</h2>
+            ${this.buildCardsHtml(group.stories)}
+          </section>
+        `
+        )
+        .join('');
+      this.container.insertAdjacentHTML('beforeend', html);
+      return;
+    }
+
     this.container.insertAdjacentHTML('beforeend', this.buildCardsHtml(stories));
   }
 
