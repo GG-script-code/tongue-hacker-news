@@ -7,7 +7,7 @@ describe('HackerNewsRepository', () => {
 
   beforeEach(() => {
     mockClient = { get: vi.fn() };
-    repo = new HackerNewsRepository(mockClient);
+    repo = new HackerNewsRepository(mockClient, false);
   });
 
   describe('getNewStoryIds', () => {

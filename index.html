@@ -5,7 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/src/img/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tongue - Hacker News Reader</title>
-    <!-- MANCAVA QUESTA RIGA: importa il foglio di stile principale -->
     <link rel="stylesheet" href="/src/css/style.css" />
   </head>
   <body>
@@ -15,7 +14,20 @@
         <h1>Tongue</h1>
         <p class="app-subtitle">Le ultime notizie tech, direttamente da Hacker News</p>
       </div>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Attiva tema scuro">
+        ☾
+      </button>
     </header>
+
+    <div class="search-bar-wrapper">
+      <input
+        type="search"
+        id="search-input"
+        class="search-input"
+        placeholder="Cerca nelle news caricate..."
+        aria-label="Cerca nelle news"
+      />
+    </div>
 
     <main>
       <section id="news-container" class="news-list"></section>
@@ -26,6 +38,16 @@
         Carica altre news
       </button>
     </footer>
+
+    <button
+      id="back-to-top"
+      class="back-to-top"
+      type="button"
+      aria-label="Torna su"
+      style="display: none"
+    >
+      ↑
+    </button>
 
     <script type="module" src="/src/js/main.js"></script>
   </body>

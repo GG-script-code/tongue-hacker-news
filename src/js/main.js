@@ -1,7 +1,11 @@
 import { HackerNewsRepository } from '@/js/api/HackerNewsRepository.js';
 import { NewsRenderer } from '@/js/ui/NewsRenderer.js';
 import { LoadMoreButton } from '@/js/ui/LoadMoreButton.js';
+import { ThemeManager } from '@/js/ui/ThemeManager.js';
+import { SearchBar } from '@/js/ui/SearchBar.js';
+import { BackToTop } from '@/js/ui/BackToTop.js';
 import { getNextBatch } from '@/js/utils/pagination.js';
+import { filterStories } from '@/js/utils/search.js';
 import { config } from '@/js/config.js';
 
 const state = {
@@ -9,11 +13,26 @@ const state = {
   page: 0,
   isLoading: false,
   exhausted: false,
+  loadedStories: [],
+  searchQuery: '',
 };
 
 const repository = new HackerNewsRepository();
 const renderer = new NewsRenderer('#news-container');
 const loadMoreButton = new LoadMoreButton('#load-more-btn');
+
+new ThemeManager('#theme-toggle');
+new BackToTop('#back-to-top');
+
+new SearchBar('#search-input', (query) => {
+  state.searchQuery = query;
+  if (state.loadedStories.length === 0) return;
+  if (String(query).trim() === '') {
+    renderer.renderFiltered(state.loadedStories);
+  } else {
+    renderer.renderFiltered(filterStories(state.loadedStories, query));
+  }
+});
 
 async function loadPage() {
   if (state.isLoading || state.exhausted) return;
@@ -35,7 +54,14 @@ async function loadPage() {
 
     const stories = await repository.getStoriesBatch(idsForPage);
     renderer.hideLoading();
-    renderer.render(stories);
+
+    state.loadedStories = [...state.loadedStories, ...stories];
+
+    if (String(state.searchQuery).trim() !== '') {
+      renderer.renderFiltered(filterStories(state.loadedStories, state.searchQuery));
+    } else {
+      renderer.render(stories);
+    }
 
     state.page += 1;
 

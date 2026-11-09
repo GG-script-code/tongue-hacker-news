@@ -1,5 +1,7 @@
 import { formatDate } from '@/js/utils/dateFormatter.js';
 
+const SKELETON_COUNT = 3;
+
 export class NewsRenderer {
   constructor(containerSelector) {
     this.container = document.querySelector(containerSelector);
@@ -14,8 +16,23 @@ export class NewsRenderer {
 
   render(stories) {
     if (!Array.isArray(stories) || stories.length === 0) return;
+    this.container.insertAdjacentHTML('beforeend', this.buildCardsHtml(stories));
+  }
 
-    const html = stories
+  renderFiltered(stories) {
+    this.container.innerHTML = '';
+    if (!Array.isArray(stories) || stories.length === 0) {
+      this.container.insertAdjacentHTML(
+        'beforeend',
+        '<p class="no-results">Nessuna news corrisponde alla ricerca.</p>'
+      );
+      return;
+    }
+    this.container.insertAdjacentHTML('beforeend', this.buildCardsHtml(stories));
+  }
+
+  buildCardsHtml(stories) {
+    return stories
       .map(
         (story) => `
         <article class="news-card">
@@ -29,19 +46,28 @@ export class NewsRenderer {
       `
       )
       .join('');
-
-    this.container.insertAdjacentHTML('beforeend', html);
   }
 
   showLoading() {
+    const skeletons = Array.from({ length: SKELETON_COUNT })
+      .map(
+        () => `
+        <div class="skeleton-card">
+          <div class="skeleton-line title"></div>
+          <div class="skeleton-line date"></div>
+        </div>
+      `
+      )
+      .join('');
+
     this.container.insertAdjacentHTML(
       'beforeend',
-      '<p class="loading-message">Caricamento in corso...</p>'
+      `<div class="skeleton-group">${skeletons}</div>`
     );
   }
 
   hideLoading() {
-    const loading = this.container.querySelector('.loading-message');
+    const loading = this.container.querySelector('.skeleton-group');
     if (loading) loading.remove();
   }
 

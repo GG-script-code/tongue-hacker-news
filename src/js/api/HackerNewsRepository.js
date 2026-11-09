@@ -1,9 +1,14 @@
 ﻿import axios from 'axios';
 import { config } from '@/js/config.js';
+import { safeGet, safeSet } from '@/js/storage.js';
+import { buildCacheKey, isCacheValid } from '@/js/utils/cache.js';
+
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export class HackerNewsRepository {
-  constructor(client = axios) {
+  constructor(client = axios, cacheEnabled = true) {
     this.client = client;
+    this.cacheEnabled = cacheEnabled;
   }
 
   async getNewStoryIds() {
@@ -24,7 +29,25 @@ export class HackerNewsRepository {
 
   async getStoriesBatch(ids) {
     if (!Array.isArray(ids) || ids.length === 0) return [];
+
+    if (this.cacheEnabled) {
+      const cacheKey = buildCacheKey(ids.join(','));
+      const cached = safeGet(cacheKey);
+      if (cached && isCacheValid(cached.timestamp, CACHE_TTL_MS)) {
+        return cached.stories;
+      }
+    }
+
     const results = await Promise.allSettled(ids.map((id) => this.getStoryDetails(id)));
-    return results.filter((r) => r.status === 'fulfilled' && r.value !== null).map((r) => r.value);
+    const stories = results
+      .filter((r) => r.status === 'fulfilled' && r.value !== null)
+      .map((r) => r.value);
+
+    if (this.cacheEnabled && stories.length > 0) {
+      const cacheKey = buildCacheKey(ids.join(','));
+      safeSet(cacheKey, { stories, timestamp: Date.now() });
+    }
+
+    return stories;
   }
 }
