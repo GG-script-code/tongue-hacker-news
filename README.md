@@ -6,7 +6,7 @@ A JavaScript application that brings the latest tech news from [Hacker News](htt
 [![Vitest](https://img.shields.io/badge/tested_with-Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-**Live demo:** [https://YOUR-NETLIFY-URL.netlify.app](https://YOUR-NETLIFY-URL.netlify.app)
+**Live demo:** [https://tongue-hacker-news-gg.netlify.app](https://tongue-hacker-news-gg.netlify.app)
 
 ---
 
